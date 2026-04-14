@@ -1,7 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import os
 from typing import Optional
-import pkg_resources
+try:
+    from importlib.resources import files
+except ImportError:
+    # Fallback for Python < 3.9
+    from importlib_resources import files
 import torch
 
 from detectron2.checkpoint import DetectionCheckpointer
@@ -136,9 +140,15 @@ def get_config_file(config_path):
     Returns:
         str: the real path to the config file.
     """
-    cfg_file = pkg_resources.resource_filename(
-        "detectron2.model_zoo", os.path.join("configs", config_path)
-    )
+    try:
+        # Use importlib.resources (Python 3.9+)
+        cfg_file = str(files("detectron2.model_zoo").joinpath("configs", config_path))
+    except (TypeError, AttributeError):
+        # Fallback for older implementations
+        import pkg_resources
+        cfg_file = pkg_resources.resource_filename(
+            "detectron2.model_zoo", os.path.join("configs", config_path)
+        )
     if not os.path.exists(cfg_file):
         raise RuntimeError("{} not available in Model Zoo!".format(config_path))
     return cfg_file
